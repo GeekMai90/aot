@@ -1,251 +1,263 @@
+# Roam Research 的思维算法（AOT）
 
-# Algorithms of Thought (AOT) for Roam Research
+Algorithms of Thought（AOT）是一个 Roam Research 扩展，用来提供一套**结构化思考脚手架**。它通过轻量、可重复使用的提示，帮助你更清晰地思考决策、问题、权衡以及下一步行动。
 
-Algorithms of Thought (AOT) is a Roam Research extension that provides **structured thinking scaffolds** — lightweight, repeatable prompts that help you reason more clearly about decisions, problems, trade-offs, and next actions.
+AOT **不是自动化工具**，也**不是 AI**。它是一组有意设计的认知工具：小而明确的思考模式，你可以在恰当的时候主动调用。它的价值来自你按结构去思考，而不是把思考过程交给别人替你完成。
 
-AOTs are **not automation** and **not AI**. They are intentional cognitive tools: small, named thinking patterns that you can invoke exactly when you need them. Their value is obtained through structured thought, not by having the thinking done for you.
+你可以通过以下方式触发 AOT：
 
-You can trigger AOTs via:
-- **Command Palette**
-- **Roam hotkeys**
-- **SmartBlocks flows**
-
----
-
-## Recent Updates (Architecture & Safety)
-
-This extension has been **substantially rewritten** to improve robustness, predictability, and safety — especially under heavy SmartBlocks and Command Palette usage.
-
-### What changed
-
-- **Unified execution engine**  
-  All AOTs now run through a single, consistent execution pathway.
-
-- **Safer cancellation & cleanup**
-  Cancelling an AOT no longer leaves partial structure behind or overwrites content.
-
-- **Focus-aware behavior**
-  The engine respects block focus state and avoids destructive edits.
-
-- **Isolation between runs**
-  Each invocation is isolated; state cannot leak between AOTs.
-
-- **Extensible registry**
-  New AOTs can be added safely without destabilising existing ones.
-
-The goal: **AOTs should feel boringly reliable**.
+- **命令面板**
+- **Roam 快捷键**
+- **SmartBlocks 流程**
 
 ---
 
-## What Are Algorithms of Thought?
+## 最近更新（架构与安全性）
 
-An Algorithm of Thought is a **named thinking pattern** with:
-- A clear purpose
-- A fixed structure
-- Minimal ceremony
+这个扩展最近经过了**较大幅度的重写**，目标是提升稳定性、可预测性和安全性，尤其是在频繁使用 SmartBlocks 和命令面板时。
 
-They are designed to:
-- Reduce cognitive load
-- Externalise reasoning
-- Prevent common thinking traps
-- Encourage deliberate, structured reflection
+### 具体改了什么
 
-Think of them as **mental macros**.
+- **统一的执行引擎**  
+  所有 AOT 现在都走一条统一、稳定的执行路径。
+
+- **更安全的取消与清理机制**  
+  取消 AOT 时，不会再留下半成品结构，也不容易覆盖已有内容。
+
+- **感知焦点的行为设计**  
+  执行引擎会尊重当前 block 的焦点状态，避免破坏性编辑。
+
+- **每次运行彼此隔离**  
+  每次调用都是独立的，状态不会在不同 AOT 之间泄漏。
+
+- **可扩展注册表**  
+  可以更安全地增加新的 AOT，而不至于破坏已有功能。
+
+目标很简单：**AOT 应该可靠到让你感觉“它没什么存在感”。**
 
 ---
 
-## Algorithms of Thought — Grouped by Theme
-Below is the full set of available AOTs, grouped by what kind of thinking they support. Each includes a short description and its SmartBlocks command.
+## 什么是思维算法（Algorithms of Thought）？
 
-### 🧭 Direction, Goals & Priorities
+一个思维算法，本质上就是一种**有名字的思考模式**，它通常具备：
+
+- 明确的用途
+- 固定的结构
+- 尽量少的仪式感
+
+它们的设计目标是：
+
+- 降低认知负担
+- 把推理过程外显出来
+- 避开常见思维陷阱
+- 鼓励更审慎、更结构化的反思
+
+你可以把它们理解成一种**思维层面的宏命令**。
+
+---
+
+## AOT 列表：按主题分类
+
+下面是当前可用的全部 AOT，按照它们支持的思考类型分组。每个条目都附带了简短说明和对应的 SmartBlocks 命令。
+
+### 方向、目标与优先级
+
 - **Aims, Goals, Objectives**
-  - Clarifies high-level intent vs concrete objectives.
+  - 用来区分高层意图与具体目标。
   - `<%AOTAGO%>`
 - **First Important Priorities**
-  - Forces ranking when everything feels important.
+  - 当一切看起来都很重要时，强迫你做优先级排序。
   - `<%AOTFIP%>`
 - **Next Action**
-  - Converts vague intent into a concrete, doable step.
+  - 把模糊意图转成一个具体、可执行的动作。
   - `<%AOTNEXTACTION%>`
 
-### ⚖️ Decision-Making & Trade-offs
+### 决策与权衡
+
 - **Basic Decision**
-  - A simple, minimal decision scaffold.
+  - 一个简单、最小化的决策脚手架。
   - `<%AOTBASICDECISION%>`
 - **Simple Choice**
-  - Lightweight comparison when complexity is low.
+  - 适合复杂度较低时做轻量对比。
   - `<%AOTCHOICE%>`
 - **Alternatives, Possibilities, Choices**
-  - Expands option space before narrowing.
+  - 先扩展选项空间，再逐步收敛。
   - `<%AOTAPC%>`
 - **Regret Minimisation**
-  - Evaluates choices based on long-term regret.
+  - 从长期后悔的角度评估选择。
   - `<%AOTREGRET%>`
 - **Design / Decision, Outcome, Channels, Action (DODCA)**
-  - Forces alignment between decisions and execution.
+  - 强制把决策与执行对齐。
   - `<%AOTDODCA%>`
 
-### 🔍 Critical Thinking & Challenge
+### 批判性思考与挑战
+
 - **Assumptions X-Ray**
-  - Makes hidden assumptions explicit.
+  - 把隐藏的假设显性化。
   - `<%AOTAX%>`
 - **Examine Both Sides**
-  - Counteracts one-sided reasoning.
+  - 用来对抗单边思考。
   - `<%AOTEBS%>`
 - **Difference Engine**
-  - Identifies what actually differs between options or positions.
+  - 帮你识别选项或立场之间真正的差异。
   - `<%AOTDIFFERENCE%>`
 
-### 🧠 Analysis, Diagnosis & Understanding
+### 分析、诊断与理解
+
 - **Five Whys**
-  - Root-cause analysis through iterative questioning.
+  - 通过连续追问做根因分析。
   - `<%AOTFIVEWHYS%>`
 - **Recognise, Analyse, Divide**
-  - Breaks complex problems into manageable components.
+  - 把复杂问题拆成可处理的部分。
   - `<%AOTRAD%>`
 - **Consequence and Sequel**
-  - Short- and long-term impact analysis.
-  -  `<%AOTCS%>`
+  - 同时看短期与长期影响。
+  - `<%AOTCS%>`
 - **Consider All Factors**
-  - Broadens attention beyond the obvious.
+  - 把注意力从显而易见的因素扩展出去。
   - `<%AOTCAF%>`
 
-### 🤝 Disagreement & Perspective
+### 分歧与视角
+
 - **Agreement, Disagreement and Irrelevance**
-  - Separates signal from noise in arguments.
+  - 在争论中分离真正有信号的内容和噪音。
   - `<%AOTADI%>`
 - **Right to Disagree (Cortex Futura)**
-  - Structured disagreement without escalation.
+  - 一种有结构、不升级冲突的分歧处理方式。
   - `<%AOTRTD%>`
 - **Right to Disagree (Deeper Version)**
-  - A more thorough adversarial-thinking scaffold.
+  - 更深入、更完整的对抗式思考脚手架。
   - `<%AOTRTDDEEP%>`
 
-### 🧩 Creativity & Reframing
+### 创造力与重构视角
+
 - **Six Thinking Hats**
-  - Parallel thinking through explicit modes.
+  - 通过明确的思考模式并行处理问题。
   - `<%AOTSIXHATS%>`
-- **Plus, Minus, Interesting** 
-  - Fast reframing without overanalysis.
+- **Plus, Minus, Interesting**
+  - 不做过度分析，也能快速换个角度看问题。
   - `<%AOTPMI%>`
 - **SWOT Analysis**
-  - Classic situational assessment.
+  - 经典的情境评估框架。
   - `<%AOTSWOT%>`
 
-### 🛠 Action & Resolution
+### 行动与解决
+
 - **Want, Impediment, Remedy**
-  - Surfaces blockers and actionable remedies.
+  - 用来识别阻碍和可执行的补救措施。
   - `<%AOTWANT%>`
 - **TOSCA**
-  - Frames problems in terms of triggers, outcomes, and actions.
+  - 从触发条件、结果和行动三个角度给问题定框架。
   - `<%AOTTOSCA%>`
 - **Pain Button (Ray Dalio)**
-  - Identifies emotional triggers as learning opportunities.
+  - 把情绪触发点视为学习机会。
   - `<%AOTPAIN%>`
 
-### 📚 Source Analysis & Appraisal
+### 来源分析与评估
+
 - **REALLY?**
-  - A fast, structured checklist for evaluating claims, studies, statistics, or persuasive arguments. Designed to trigger epistemic discomfort early, before weak or misleading results are accepted.
+  - 一个快速、结构化的检查清单，用来评估主张、研究、统计数字或说服性论证。它的设计目标是尽早触发认识论上的不舒服感，避免你太早接受薄弱或误导性的结论。
   - `<%AOTREALLY%>`
 - **REAPPRAISED Checklist**
-  - A structured checklist for critically appraising sources, arguments, or bodies of evidence (e.g. articles, claims, proposals). Particularly useful for academic reading, policy documents, and persuasive writing.
+  - 一个结构化清单，用来批判性评估来源、论点或证据整体（例如文章、主张、提案）。特别适合学术阅读、政策文件和说服性写作。
   - `<%AOTREAPPRAISED%>`
 
 ---
 
-## Which Algorithm of Thought Should I Use?
+## 我该用哪一个 AOT？
 
-If you’re not sure where to start, use this guide. Pick the kind of thinking you need — not the tool you remember.
+如果你不确定从哪里开始，可以看这个指引。先判断你需要的是什么类型的思考，而不是先回忆工具名字。
 
-### "I'm not clear what the problem actually is"
+### “我其实还没搞清楚问题到底是什么”
 
-Use these to understand or diagnose before acting:
+先用这些帮助你理解或诊断，再考虑行动：
 
-- **Recognise, Analyse, Divide** – break complexity apart
-- **Five Whys** – find root causes
-- **Consider All Factors** – widen the frame
-- **Difference Engine** – clarify what truly differs
-- **Consequence and Sequel** – explore downstream effects
+- **Recognise, Analyse, Divide**：先把复杂性拆开
+- **Five Whys**：找到根因
+- **Consider All Factors**：把视野拉宽
+- **Difference Engine**：澄清真正不同的地方
+- **Consequence and Sequel**：探索后续影响
 
-### "I need to make a decision"
+### “我需要做一个决定”
 
-Use these when you are choosing between options:
+当你在不同选项之间做选择时，可以用这些：
 
-- **Simple Choice** – low-stakes, few options
-- **Basic Decision** – everyday decisions
-- **Alternatives, Possibilities, Choices** – expand option space
-- **Regret Minimisation** – long-term, identity-shaping decisions
-- **DODCA** – decisions that must lead to execution
+- **Simple Choice**：低风险、选项不多
+- **Basic Decision**：日常决策
+- **Alternatives, Possibilities, Choices**：先拓展选项空间
+- **Regret Minimisation**：长期、会塑造身份的决策
+- **DODCA**：必须导向执行的决策
 
-### "Everything feels important — I need focus"
+### “所有事情都很重要，我需要聚焦”
 
-Use these to prioritise and orient:
+这些适合拿来定向和排优先级：
 
-- **Aims, Goals, Objectives** – clarify intent vs execution
-- **First Important Priorities** – force ranking
-- **Next Action** – move from thinking to doing
+- **Aims, Goals, Objectives**：澄清意图和执行的关系
+- **First Important Priorities**：强制排序
+- **Next Action**：从思考走向行动
 
-### "I'm worried my thinking is biased or shallow"
+### “我担心自己的思考有偏见，或者太浅”
 
-Use these to stress-test reasoning:
+这些适合拿来给推理做压力测试：
 
-- **Assumptions X-Ray** – surface hidden assumptions
-- **Examine Both Sides** – counter confirmation bias
-- **Agreement, Disagreement and Irrelevance** – separate signal from noise
+- **Assumptions X-Ray**：把隐藏假设拉出来
+- **Examine Both Sides**：对抗确认偏误
+- **Agreement, Disagreement and Irrelevance**：把真正有意义的内容和噪音分开
 
-### "There's disagreement or competing viewpoints"
+### “这里有分歧，或者存在竞争性观点”
 
-Use these for constructive adversarial thinking:
+这些适合做建设性的对抗式思考：
 
-- **Right to Disagree (Cortex Futura)** – principled disagreement
-- **Right to Disagree (Deeper Version)** – rigorous adversarial analysis
-- **Agreement, Disagreement and Irrelevance** – map alignment and divergence
+- **Right to Disagree (Cortex Futura)**：有原则地保留分歧
+- **Right to Disagree (Deeper Version)**：更严格的对抗性分析
+- **Agreement, Disagreement and Irrelevance**：映射共识与分歧
 
-### "I want to think more creatively or reframe the situation"
+### “我想更有创造力，或者换个框架思考”
 
-Use these to change perspective:
+这些适合用来改换视角：
 
-- **Six Thinking Hats** – parallel modes of thinking
-- **Plus, Minus, Interesting** – quick reframing
-- **SWOT Analysis** – situational overview
+- **Six Thinking Hats**：平行思考
+- **Plus, Minus, Interesting**：快速重构视角
+- **SWOT Analysis**：快速看整体情境
 
-### "I need to move from insight to action"
+### “我已经有洞见了，但还没进入行动”
 
-Use these when the problem is understood but progress is stuck:
+当问题已经理解得差不多，但推进卡住时，可以用这些：
 
-- **Want, Impediment, Remedy** – identify blockers and fixes
-- **TOSCA** – clarify triggers, outcomes, and actions
-- **Pain Button (Ray Dalio)** – learn from emotional friction
-- **Consequence and Sequel** – sanity-check actions over time
+- **Want, Impediment, Remedy**：识别阻碍和对应修复
+- **TOSCA**：澄清触发、结果与行动
+- **Pain Button (Ray Dalio)**：从情绪摩擦里学习
+- **Consequence and Sequel**：检查行动在时间上的后果
 
-### "I'm reading or evaluating a source or claim"
+### “我正在读资料，或者评估一个主张”
 
-Use this when the task is *appraisal, not decision*:
+当任务重点是*评估*而不是*决策*时，用这些：
 
-- **REALLY?** – fast claim appraisal
-- **REAPPRAISED Checklist** – systematic source and evidence evaluation
+- **REALLY?**：快速评估主张
+- **REAPPRAISED Checklist**：系统性评估来源与证据
 
-### “If you’re stuck executing → Ultraworking”
+### “如果你卡在执行上 → Ultraworking”
 
-Install the Ultraworking extension to enhance execution (Roam Depot).
+可以安装 Ultraworking 扩展来增强执行（Roam Depot）。
 
-### “If you’re stuck creatively → Oblique Strategies”
+### “如果你卡在创意上 → Oblique Strategies”
 
-Install the Oblique Strategies extension via Roam Depot to conquer creative block.
+可以通过 Roam Depot 安装 Oblique Strategies 扩展来打破创作卡顿。
 
+一个实用的经验法则：
 
-A Useful Rule of Thumb:
-- If you’re *confused* → diagnose
-- If you’re *choosing* → decide
-- If you’re *stuck* → prioritise or act
-- If you’re *arguing* → adversarial thinking
-- If you’re *reading* → appraise
+- 如果你是**困惑**的：先诊断
+- 如果你在**选择**：先决策
+- 如果你**卡住**了：先排优先级或转成行动
+- 如果你在**争论**：用对抗式思考
+- 如果你在**阅读**：做评估
 
-Algorithms of Thought work best when you **name the thinking problem first**.
+AOT 最有效的用法，是你先**给当前的思考问题命名**。
 
 ---
 
-## Coming Soon
+## 即将加入
+
 - After Action Review
 - Circle of Control
 - Claim, Evidence, Confidence
@@ -258,23 +270,3 @@ Algorithms of Thought work best when you **name the thinking problem first**.
 - PDSA
 - Pre-Mortem
 - Stakeholder Mapping
-- Steelman Analysis
-
-You can request additional AOTs via the Roam Research Slack channel.
-
----
-
-## Background & Influences
-
-This extension builds on a long lineage of structured thinking work, particularly early SmartBlocks experimentation.
-
-Notable sources and inspiration:
-- https://www.cortexfutura.com/c/algorithm-of-thought/
-- https://www.cortexfutura.com/adversarial-reading/
-- https://www.virtualsalt.com/problem-solving-techniques/
-- https://www.zsolt.blog/search/label/Algorithms%20of%20Thought
-- https://www.zsolt.blog/2020/12/tosca-pattern-for-framing-problems.html
-- https://www.debono.com/de-bono-thinking-lessons-1
-
-A public archive of early SmartBlocks AOT experiments is available at:
-https://github.com/dvargas92495/SmartBlocks/issues

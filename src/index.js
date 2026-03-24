@@ -9,12 +9,15 @@ const runtime = {
     running: false,
     smartblocksLoadedHandler: null,
     ctx: null,
+    extensionAPI: null,
 };
 
 // -------------------- SETTINGS --------------------
 
 const SETTING_CANCEL_CLEANUP = "cancel_cleanup_mode";
+const SETTING_SIMPLIFIED_CHINESE = "simplified_chinese_ui";
 const DEFAULT_CANCEL_CLEANUP = true;
+const DEFAULT_SIMPLIFIED_CHINESE = "auto";
 
 function normalizeBoolean(v, fallback = false) {
     if (v === true || v === "true" || v === 1 || v === "1") return true;
@@ -31,11 +34,621 @@ function getCancelCleanupEnabled(extensionAPI) {
     }
 }
 
+function browserPrefersChinese() {
+    try {
+        return /^zh\b/i.test(String(window?.navigator?.language || ""));
+    } catch (e) {
+        return false;
+    }
+}
+
+function getChineseEnabled(extensionAPI) {
+    try {
+        const v = extensionAPI?.settings?.get?.(SETTING_SIMPLIFIED_CHINESE);
+        if (v === null || v === undefined || v === DEFAULT_SIMPLIFIED_CHINESE) {
+            return browserPrefersChinese();
+        }
+        return normalizeBoolean(v, browserPrefersChinese());
+    } catch (e) {
+        return browserPrefersChinese();
+    }
+}
+
+function isChineseEnabled() {
+    return getChineseEnabled(runtime.extensionAPI);
+}
+
+const ZH_EXACT = {
+    "Cancel cleanup mode": "取消时清理",
+    "If you cancel a workflow, automatically remove blocks created during this run and restore the starting block text.": "如果你取消当前流程，自动删除本次运行创建的 blocks，并恢复起始 block 的原始文本。",
+    "Use Simplified Chinese": "使用简体中文",
+    "Show prompts, buttons, command names, and generated scaffold text in Simplified Chinese.": "将弹窗提示、按钮、命令名称和生成的思考脚手架文本显示为简体中文。",
+    AOT: "AOT",
+    "An AOT workflow is already running. Finish it first (or cancel it).": "已有一个 AOT 流程正在运行。请先完成它，或者先取消。",
+    "Something went wrong running this AOT. Check console for details.": "运行这个 AOT 时出了问题。请打开控制台查看详情。",
+    "AOT Error": "AOT 错误",
+    Cancelled: "已取消",
+    "Please make sure to focus a block before starting an AOT": "启动 AOT 前，请先把光标放到一个 block 里。",
+    "Could not determine windowId (focus restore may not work).": "无法确定 windowId，之后恢复焦点可能不稳定。",
+    "No currentUid from SmartBlocks context.": "没有从 SmartBlocks 上下文中拿到当前 block 的 UID。",
+    Confirm: "确认",
+    Cancel: "取消",
+    Yes: "是",
+    No: "否",
+    yes: "是",
+    no: "否",
+    Save: "保存",
+    Select: "请选择",
+    "Type here...": "在这里输入……",
+    "(empty)": "（空）",
+
+    "AOT - Aims, Goals, Objectives (AGO)": "AOT - 目标、结果与行动（AGO）",
+    "AOT - Agreement, Disagreement and Irrelevance": "AOT - 同意、分歧与无关项",
+    "AOT - Alternatives, Possibilities, Choices": "AOT - 备选、可能性与选择",
+    "AOT - Assumptions X-ray": "AOT - 假设透视",
+    "AOT - Basic Decision": "AOT - 基础决策",
+    "AOT - Consequence and Sequel (C&S)": "AOT - 结果与后续（C&S）",
+    "AOT - Consider All Factors": "AOT - 全面考虑因素",
+    "AOT - Design/Decision, Outcome, Channels, Action (DODCA)": "AOT - 设计/决策、结果、渠道、行动（DODCA）",
+    "AOT - Difference Engine": "AOT - 差异引擎",
+    "AOT - Examine Both Sides (EBS)": "AOT - 检视双方（EBS）",
+    "AOT - First Important Priorities": "AOT - 第一重要优先级",
+    "AOT - Five Whys": "AOT - 五个为什么",
+    "AOT - Next Action": "AOT - 下一步行动",
+    "AOT - Pain Button": "AOT - 痛苦按钮",
+    "AOT - Plus, Minus and Interesting": "AOT - 正面、负面与有趣之处",
+    "AOT - REALLY?": "AOT - 真的如此吗？",
+    "AOT - REAPPRAISED": "AOT - REAPPRAISED 研究审查清单",
+    "AOT - Recognise, Analyse, Divide": "AOT - 识别、分析、拆解",
+    "AOT - Regret Minimisation": "AOT - 遗憾最小化",
+    "AOT - Right to Disagree (Cortex Futura)": "AOT - 保留分歧权（Cortex Futura）",
+    "AOT - Right to Disagree (Deeper Version)": "AOT - 保留分歧权（深入版）",
+    "AOT - Simple Choice": "AOT - 简单选择",
+    "AOT - Six Thinking Hats": "AOT - 六顶思考帽",
+    "AOT - SWOT Analysis": "AOT - SWOT 分析",
+    "AOT - TOSCA": "AOT - TOSCA",
+    "AOT - Want, Impediment, Remedy": "AOT - 愿望、阻碍、补救",
+
+    AGO: "AGO",
+    "Agreement, Disagreement and Irrelevance": "同意、分歧与无关项",
+    "Alternatives, Possibilities, Choices": "备选、可能性与选择",
+    "Assumptions X-Ray": "假设透视",
+    "Assumptions X-Ray:": "假设透视",
+    "Basic Decision": "基础决策",
+    "Decision Time": "做决定的时候了",
+    "C&S": "C&S",
+    "Consider All Factors": "全面考虑因素",
+    DODCA: "DODCA",
+    "Difference Engine": "差异引擎",
+    EBS: "EBS",
+    "First Important Priorities": "第一重要优先级",
+    "Five Whys": "五个为什么",
+    "Next Action": "下一步行动",
+    Brainstorming: "头脑风暴",
+    "Pain Button": "痛苦按钮",
+    "Pain Button — 3-minute reflection": "痛苦按钮：3 分钟反思",
+    "Plus, Minus and Interesting": "正面、负面与有趣之处",
+    "REALLY?": "真的如此吗？",
+    REAPPRAISED: "REAPPRAISED",
+    Recognise: "识别",
+    Analyse: "分析",
+    Divide: "拆解",
+    "Regret Minimisation": "遗憾最小化",
+    "Right to Disagree": "保留分歧权",
+    "Right to Disagree (Deep)": "保留分歧权（深入版）",
+    "Six Thinking Hats": "六顶思考帽",
+    "SWOT Analysis": "SWOT 分析",
+    "SWOT Strategies": "SWOT 策略",
+    "Simple Choice": "简单选择",
+    TOSCA: "TOSCA",
+    "Want, Impediment, Remedy": "愿望、阻碍、补救",
+    "Other People's Views": "他人视角",
+    Option: "选项",
+    Constraint: "约束条件",
+
+    "**Situation:**": "**情境：**",
+    "**Agreement:**": "**同意之处：**",
+    "**Disagreement:**": "**分歧之处：**",
+    "**Irrelevance:**": "**无关项：**",
+    "**Alternatives, Possibilities, Choices:**": "**备选、可能性与选择：**",
+    "**Assumption X-Ray:**": "**假设透视：**",
+    "**General Assumptions:**": "**总体假设：**",
+    "Culturally Binding:": "文化性限制：",
+    "Information Adequacy:": "信息是否充分：",
+    "**Assumptions at the crux:**": "**关键假设：**",
+    "**Assumptions determining the constraints:**": "**决定约束的假设：**",
+    "Time:": "时间：",
+    "Money:": "金钱：",
+    "Energy:": "精力：",
+    "Cost/Benefit:": "成本/收益：",
+    "Cooperation:": "协作：",
+    "Physics:": "物理规律：",
+    "Law:": "法律：",
+    "Basic Decision::": "基础决策::",
+    "**Options:**": "**选项：**",
+    "**Advantage:**": "**优点：**",
+    "**Disadvantage:**": "**缺点：**",
+    "**Constraints:**": "**约束条件：**",
+    "**Decision:**": "**决定：**",
+    "C&S::": "C&S::",
+    "**Immediate consequences:**": "**即时结果：**",
+    "**Short-term sequels:**": "**短期后续：**",
+    "**Medium-term sequels:**": "**中期后续：**",
+    "**Long-term sequels:**": "**长期后续：**",
+    "**Factors to Consider:**": "**需要考虑的因素：**",
+    "DODCA::": "DODCA::",
+    "**Outcomes (what success looks like):**": "**结果（成功看起来是什么样）：**",
+    "**Channels (ways/means to reach outcomes):**": "**渠道（达成结果的方法/路径）：**",
+    "**Actions (next steps):**": "**行动（下一步）：**",
+    "Difference Engine::": "差异引擎::",
+    "**Current Situation:**": "**当前情境：**",
+    "**Future Situation:**": "**未来情境：**",
+    "**Differences:**": "**差异：**",
+    "**Most serious difference:**": "**最严重的差异：**",
+    "**Steps to reduce the difference:**": "**缩小差异的步骤：**",
+    "**Side A (your current view):**": "**A 面（你当前的看法）：**",
+    "**Side B (the other view, mapped neutrally):**": "**B 面（另一种观点，尽量中性地表述）：**",
+    "**Bridge / synthesis / next step:**": "**桥接 / 综合 / 下一步：**",
+    "First Important Priorities::": "第一重要优先级::",
+    "**Priorities:**": "**优先级：**",
+    "**Why it matters:**": "**为什么重要：**",
+    "**If I ignore this:**": "**如果我忽略它：**",
+    "**First action:**": "**第一步行动：**",
+    "**Choose what to do first:**": "**先决定最先做什么：**",
+    "Five Whys::": "五个为什么::",
+    "**Problem:**": "**问题：**",
+    "**Why chain:**": "**为什么链条：**",
+    "**Root cause:**": "**根本原因：**",
+    "**Next steps:**": "**下一步：**",
+    "Next Action::": "下一步行动::",
+    "**Brainstorming:**": "**头脑风暴：**",
+    "Pain Button::": "痛苦按钮::",
+    "**Emotion:**": "**情绪：**",
+    "**Reflection:**": "**反思：**",
+    "**Answer these questions:**": "**回答这些问题：**",
+    "**Mitigation:**": "**缓解办法：**",
+    "**Progress:**": "**进展：**",
+    "**Plus:**": "**正面：**",
+    "**Minus:**": "**负面：**",
+    "**Interesting:**": "**有趣之处：**",
+    "**Claim:**": "**主张：**",
+    "**Evidence:**": "**证据：**",
+    "**Contrary evidence:**": "**反面证据：**",
+    "**Scope / limits:**": "**适用范围 / 限制：**",
+    "**Alternative explanations:**": "**替代性解释：**",
+    "**Revised belief:**": "**修正后的看法：**",
+    "**Paper under review:**": "**待审查论文：**",
+    "**Issue:**": "**问题：**",
+    "**Recognise (what’s here?):**": "**识别（这里有什么）：**",
+    "**Analyse (what’s going on?):**": "**分析（正在发生什么）：**",
+    "**Divide (split into parts):**": "**拆解（分成更小部分）：**",
+    "**Definition:**": "**定义：**",
+    "**Next step:**": "**下一步：**",
+    "**Now choose one:**": "**现在选一个：**",
+    "Regret Minimisation::": "遗憾最小化::",
+    "**Time horizon:**": "**时间跨度：**",
+    "**Future-self values:**": "**未来自己的价值偏好：**",
+    "**If you DO it, you might regret:**": "**如果你去做，可能会后悔：**",
+    "**If you DON’T do it, you might regret:**": "**如果你不做，可能会后悔：**",
+    "**How to reduce regrets:**": "**如何减少后悔：**",
+    "**Decision draft:**": "**决定草案：**",
+    "Right to Disagree::": "保留分歧权::",
+    "**Source:**": "**来源：**",
+    "**Why I disagree:**": "**我为什么不同意：**",
+    "**What would change my mind:**": "**什么会改变我的看法：**",
+    "Right to Disagree (Deep)::": "保留分歧权（深入版）::",
+    "**Mode:**": "**模式：**",
+    "**Strongest opposing case (steelman):**": "**最强反方论证（steelman）：**",
+    "**Your main reason for disagreeing:**": "**你不同意的主要理由：**",
+    "**Strongest challenge to your view:**": "**对你观点最强的挑战：**",
+    "**Crux of disagreement:**": "**分歧的关键点：**",
+    "**Where the disagreement lives:**": "**分歧主要发生在哪里：**",
+    "**Provisional stance:**": "**当前暂定立场：**",
+    "Six Thinking Hats::": "六顶思考帽::",
+    "**Topic:**": "**主题：**",
+    "**White Hat:**": "**白帽：**",
+    "**Red Hat:**": "**红帽：**",
+    "**Black Hat:**": "**黑帽：**",
+    "**Yellow Hat:**": "**黄帽：**",
+    "**Green Hat:**": "**绿帽：**",
+    "**Blue Hat:**": "**蓝帽：**",
+    "**Synthesis:**": "**综合：**",
+    "SWOT Analysis::": "SWOT 分析::",
+    "**Subject:**": "**对象：**",
+    "**Strengths:**": "**优势：**",
+    "**Weaknesses:**": "**劣势：**",
+    "**Opportunities:**": "**机会：**",
+    "**Threats:**": "**威胁：**",
+    "**Strategies:**": "**策略：**",
+    "**Top priorities:**": "**最高优先级：**",
+    "[[TOSCA]]:": "[[TOSCA]]：",
+    "Trouble: ": "问题表征：",
+    "Owner: ": "责任方：",
+    "Success Criteria: ": "成功标准：",
+    "Actors: ": "参与者：",
+    "**Core Question:**": "**核心问题：**",
+    "Actions: ": "行动：",
+    "{{table}}": "{{table}}",
+
+    "Research governance": "研究治理",
+    Ethics: "伦理",
+    Authorship: "作者署名",
+    Productivity: "产出合理性",
+    Plagiarism: "抄袭",
+    "Research conduct": "研究实施过程",
+    "Analyses and methods": "分析与方法",
+    "Image manipulation": "图像操纵",
+    "Statistics and data": "统计与数据",
+    Errors: "错误",
+    "Data duplication and reporting": "数据重复与报告",
+
+    "Cortex Futura — adversarial reading / right to disagree": "Cortex Futura：对抗式阅读 / 保留分歧权",
+    "Sort your objections into the buckets below (add notes under each).": "把你的异议放进下面这些类别里，并在各自下面补充说明。",
+    "Steelman → strongest challenge → crux → update condition → stance": "Steelman → 最强挑战 → 关键分歧 → 更新条件 → 当前立场",
+    "Classify the disagreement (you can pick more than one):": "给这个分歧归类（可以不止一个）：",
+    "Missing information?": "缺少信息？",
+    "Wrong information?": "信息有误？",
+    "Reasoning errors?": "推理错误？",
+    "Non sequitur?": "结论不相干？",
+    "Inconsistency?": "前后不一致？",
+    "Incomplete analysis?": "分析不完整？",
+    "Missing information": "缺少信息",
+    "Wrong information": "信息有误",
+    "Reasoning error": "推理错误",
+    "Incomplete analysis": "分析不完整",
+    "Values / priorities": "价值观 / 优先级",
+    "Evidence/arguments: ": "证据 / 论据：",
+    "Review the list above. Which priority should you do *first*? You can reorder or add notes.": "回看上面的列表。哪一项优先级应该最先做？你可以重新排序，或者继续补充说明。",
+    "List key elements without solving yet (facts, stakeholders, constraints, unknowns).": "先列出关键要素，不急着解决（事实、相关方、约束、未知项）。",
+    "Break the issue into smaller sub-problems you can address independently.": "把这个问题拆成更小的子问题，便于分别处理。",
+    "What did you learn here — and what will you do differently next time?": "你从这里学到了什么？下次你会做出什么不同的行动？",
+    "After questioning this, how would you now state the belief more accurately?": "经过这轮质疑后，你现在会如何更准确地表达这个看法？",
+    "Given the above, where do you currently stand — and with what level of confidence?": "基于以上内容，你现在的立场是什么？你的把握有多大？",
+    "What is your current best conclusion? What will you do next?": "你目前最好的结论是什么？接下来你会做什么？",
+    "**SO:** Use strengths to seize opportunities.": "**SO：** 用优势抓住机会。",
+    "**ST:** Use strengths to reduce threats.": "**ST：** 用优势降低威胁。",
+    "**WO:** Use opportunities to improve weaknesses.": "**WO：** 用机会改善弱点。",
+    "**WT:** Reduce weaknesses to avoid threats.": "**WT：** 降低弱点，避免威胁。",
+
+    Anger: "愤怒",
+    Disappointment: "失望",
+    Disrespect: "被轻视",
+    Embarrassment: "尴尬",
+    Fear: "恐惧",
+    Frustration: "挫败",
+    Insecurity: "不安",
+    Nervousness: "紧张",
+    Sadness: "悲伤",
+    Stress: "压力",
+    Worry: "担忧",
+    Other: "其他",
+    "White Hat": "白帽",
+    "Red Hat": "红帽",
+    "Black Hat": "黑帽",
+    "Yellow Hat": "黄帽",
+    "Green Hat": "绿帽",
+    "Blue Hat": "蓝帽",
+
+    "What is the topic / situation you’re setting objectives for?": "你要为哪个主题 / 情境设定目标？",
+    "What is the overall AIM (broad purpose)?": "整体 AIM（大方向的目的）是什么？",
+    "Name one GOAL (a key result).": "写下一个 GOAL（关键结果）。",
+    "Any other goals?": "还有别的 goals 吗？",
+    "Name one OBJECTIVE (specific, actionable step).": "写下一个 OBJECTIVE（具体、可执行的步骤）。",
+    "Any other objectives?": "还有别的 objectives 吗？",
+    "Quick review: does each objective clearly support a goal, and do the goals support the aim?": "快速检查一下：每个 objective 是否明确支持某个 goal，而这些 goals 是否又支持你的 aim？",
+
+    "What is the situation you wish to analyse?": "你想分析的情境是什么？",
+    "What is something about this situation on which you agree?": "关于这个情境，有什么是你认同的？",
+    "Are there any other things on which you agree?": "还有别的你认同的点吗？",
+    "What is something about this situation on which you disagree?": "关于这个情境，有什么是你不同意的？",
+    "Are there any other things on which you disagree?": "还有别的你不同意的点吗？",
+    "What is something about your disagreement that is irrelevant?": "在这些分歧里，有什么其实是不相关的？",
+    "Are there any other things that have been brought up that are irrelevant?": "还有哪些被提出来但其实无关的东西？",
+
+    "What is the situation you wish to consider?": "你想考虑的情境是什么？",
+    "What is one way to consider this situation?": "可以用哪一种方式来思考这个情境？",
+    "Are there alternative ways to consider this?": "还有其他思考这个情境的方式吗？",
+
+    "What are the culturally binding assumptions?": "有哪些受文化约束的假设？",
+    "Is the available information correct? Is it complete?": "现有信息是否正确？是否完整？",
+    "What is the main crux of your assumptions?": "你的假设中，核心关键点是什么？",
+    "What assumptions are there around time?": "在时间方面，你有哪些假设？",
+    "What assumptions are there around money?": "在金钱方面，你有哪些假设？",
+    "What assumptions are there around the energy required?": "在所需精力方面，你有哪些假设？",
+    "Is solving this problem worthwhile? What is the cost/benefit?": "解决这个问题值得吗？成本 / 收益如何？",
+    "Do I require the cooperation of anyone else? Do I hold assumptions about their views?": "我是否需要其他人的配合？我是否对他们的看法做了某些假设？",
+    "Do the laws of physics interfere? Is this problem insoluble?": "物理规律会不会构成限制？这个问题是否根本无解？",
+    "Is the solution blocked by law?": "这个解决方案是否受到法律限制？",
+    "Finally, look over your assumptions and consider whether there are more to add, or other things to consider.": "最后回看一下你的假设，看看是否还可以补充，或者是否还有别的角度要考虑。",
+
+    "What are you trying to decide?": "你想做什么决定？",
+    "What is your first option?": "你的第一个选项是什么？",
+    "What is another option?": "还有哪个选项？",
+    "What is one advantage of this option?": "这个选项的一个优点是什么？",
+    "What is one disadvantage of this option?": "这个选项的一个缺点是什么？",
+    "Are there any more options?": "还有其他选项吗？",
+    "What is a constraint on this decision?": "这个决定受什么约束？",
+    "Are there any more constraints?": "还有其他约束吗？",
+    "Look over your options and consider if there are more advantages or disadvantages to add. Then, consider your constraints. Finally, record your decision!": "回看这些选项，看看是否还能补充更多优缺点。再看看约束条件，最后写下你的决定。",
+
+    "What action/decision/idea are you evaluating consequences for?": "你要为哪一个行动 / 决策 / 想法评估后果？",
+    "Name one immediate consequence.": "写下一个即时后果。",
+    "Name one short-term sequel (what follows on).": "写下一个短期后续影响。",
+    "Name one medium-term sequel.": "写下一个中期后续影响。",
+    "Name one long-term sequel.": "写下一个长期后续影响。",
+    "Any more?": "还有吗？",
+    "Scan your list: which sequels are most likely, and which are most important?": "回看你的列表：哪些后续最可能发生？哪些最重要？",
+
+    "What is one factor you should consider?": "你应该考虑的一个因素是什么？",
+    "Are there other factors you need to consider?": "还有其他需要考虑的因素吗？",
+
+    "What are you designing/deciding?": "你在设计 / 决定什么？",
+    "Name one desired outcome.": "写下一个期望结果。",
+    "Any other outcomes?": "还有其他结果吗？",
+    "Name one channel/approach/lever you could use.": "写下一个你可以使用的渠道 / 方法 / 杠杆。",
+    "Any other channels?": "还有其他渠道吗？",
+    "Name one next action you can take.": "写下一个你现在能采取的下一步行动。",
+    "Any other actions?": "还有其他行动吗？",
+
+    "What is the Current Situation?": "当前情境是什么？",
+    "What is the situation in the Future?": "未来情境会是什么样？",
+    "What is one difference?": "写下一个差异。",
+    "Are there any more differences?": "还有其他差异吗？",
+    "Which is the most serious difference?": "哪个差异最严重？",
+    "What is one step to reduce the difference?": "缩小这个差异的一个步骤是什么？",
+    "Are there any more ways to mitigate the difference?": "还有其他缩小差异的方法吗？",
+
+    "What issue / disagreement / choice do you want to examine both sides of?": "你想从双方角度检视哪个问题 / 分歧 / 选择？",
+    "Add one point for Side A.": "为 A 面补充一个观点。",
+    "More points for Side A?": "A 面还有更多观点吗？",
+    "Add one point for Side B (as fairly as you can).": "尽量公平地为 B 面补充一个观点。",
+    "More points for Side B?": "B 面还有更多观点吗？",
+    "Given both sides, what’s a constructive next step?": "综合双方之后，一个建设性的下一步是什么？",
+
+    "What situation are you dealing with (in one sentence)?": "你正在处理什么情境？用一句话说明。",
+    "What is the single most important priority right now?": "此刻最重要的唯一优先级是什么？",
+    "What is another important priority?": "还有哪个重要优先级？",
+    "Why is this priority important?": "为什么这个优先级重要？",
+    "What happens if you *don’t* address this priority?": "如果你*不*处理这个优先级，会发生什么？",
+    "What is the very first concrete action you can take?": "你现在能采取的第一个具体行动是什么？",
+    "Do you have another priority to add?": "你还要补充别的优先级吗？",
+    "You’ve added quite a few priorities. Consider stopping and ranking them before adding more.": "你已经列出不少优先级了。可以先停下来做排序，再决定要不要继续加。",
+
+    "What problem are you trying to understand?": "你想弄清楚什么问题？",
+    "Why is this happening? (Answer as directly as you can.)": "这为什么会发生？尽量直接回答。",
+    "And why is that true?": "那又为什么是真的？",
+    "Is this the root cause (deep enough)?": "这已经是根本原因了吗？够深入了吗？",
+
+    "Do you know the next action?": "你知道下一步行动是什么吗？",
+    "What's the very next action?": "最下一步的行动是什么？",
+    "Do a three-minute brainstorming session to come up with a next action": "做一个三分钟头脑风暴，想出一个下一步行动。",
+    "Now do you know the next action?": "现在你知道下一步行动了吗？",
+    "Create any other tasks you need to complete": "把你还需要完成的其他任务写出来。",
+    "Are there any other blocking tasks?": "还有其他阻塞任务吗？",
+
+    "What situation is causing you pain (or discomfort) right now?": "什么情境正在让你感到痛苦（或不适）？",
+    "What emotion best fits what you're feeling?": "哪种情绪最符合你当前的感受？",
+    "What emotion are you experiencing?": "你正在体验什么情绪？",
+    "Reflect for 3 minutes:\n\n• What happened (facts)?\n• What did you assume / interpret?\n• What did you do next?\n\nType below — it will auto-save when time runs out (or press Save).": "请反思 3 分钟：\n\n• 发生了什么（事实）？\n• 你做了哪些假设 / 解读？\n• 接下来你做了什么？\n\n在下面输入。时间到了会自动保存，你也可以手动点“保存”。",
+    "Do you still feel this pain was warranted or valid?": "你现在仍然觉得这种痛苦是合理的吗？",
+    "Does this situation still matter today?": "这件事在今天还重要吗？",
+    "What is one thing you could do to mitigate against this type of pain in the future?": "为了减少未来再次经历这种痛苦，你可以做的一件事是什么？",
+
+    "What situation are you facing/considering?": "你正在面对 / 考虑的情境是什么？",
+    "What is a positive aspect of this situation?": "这个情境的一个正面方面是什么？",
+    "Are there any more positive aspects to consider?": "还有其他正面方面吗？",
+    "What is a negative aspect of this situation?": "这个情境的一个负面方面是什么？",
+    "Are there any more negative aspects to consider?": "还有其他负面方面吗？",
+    "What is an interesting aspect of this situation?": "这个情境中有什么值得注意或有趣的方面？",
+    "Are there any more interesting aspects to consider?": "还有其他有趣的方面吗？",
+
+    "What statement, belief, or assumption are you questioning?": "你正在质疑哪个说法、信念或假设？",
+    "What evidence supports this claim?": "有什么证据支持这个主张？",
+    "What evidence or examples might contradict it?": "有什么证据或例子可能与它相矛盾？",
+    "Is this always true, usually true, or only sometimes true?": "这件事是总是如此、通常如此，还是偶尔如此？",
+    "What alternative explanations could exist?": "还可能有哪些替代性解释？",
+
+    "What paper, preprint, or study are you evaluating?": "你正在评估哪篇论文、预印本或研究？",
+
+    "What issue/problem are you working on (one sentence)?": "你正在处理什么问题？用一句话说明。",
+    "Name one key element (fact/stakeholder/constraint/unknown).": "写下一个关键要素（事实 / 利益相关者 / 约束 / 未知项）。",
+    "Add another element?": "再加一个要素吗？",
+    "What do you think is driving this issue? (causes/mechanisms)": "你认为这个问题背后的驱动因素是什么？（原因 / 机制）",
+    "What assumptions are you making (yours/theirs/systemic)?": "你现在做了哪些假设？（你自己的 / 他人的 / 系统性的）",
+    "What’s missing or uncertain? What would you need to learn?": "还有什么缺失或不确定？你需要再了解什么？",
+    "What is the first sub-problem?": "第一个子问题是什么？",
+    "What is another sub-problem?": "还有哪个子问题？",
+    "Describe it clearly (what counts as solved?).": "把它说清楚：什么情况下算解决了？",
+    "What is the first actionable next step?": "第一个可执行的下一步是什么？",
+    "Add another sub-problem?": "再加一个子问题吗？",
+    "You’ve added many sub-problems. Consider stopping and ranking them.": "你已经列出了很多子问题。可以先停下来，做一下排序。",
+
+    "What decision are you considering?": "你正在考虑什么决定？",
+    "Choose a time horizon (e.g., 1 year / 5 years / 10 years).": "选一个时间跨度（例如 1 年 / 5 年 / 10 年）。",
+    "Name one possible regret if you do it.": "写下一个“如果你去做”可能会后悔的点。",
+    "Add another regret (DO)?": "再加一个“去做”的后悔点吗？",
+    "Name one possible regret if you don’t do it.": "写下一个“如果你不做”可能会后悔的点。",
+    "Add another regret (DON’T)?": "再加一个“不去做”的后悔点吗？",
+    "What could you do now to reduce the biggest DO-regret?": "你现在可以做什么，来减少“去做”带来的最大后悔？",
+    "What could you do now to reduce the biggest DON’T-regret?": "你现在可以做什么，来减少“不去做”带来的最大后悔？",
+    "Given this, what do you choose (for now)?": "基于这些，你现在暂时会怎么选？",
+    "What is the next small action to move forward (or test)?": "为了继续推进（或验证），下一个小行动是什么？",
+
+    "What claim, belief, or position are you disagreeing with?": "你不同意的是哪个主张、信念或立场？",
+    "What claim, belief, or position is in dispute?": "当前有争议的是哪个主张、信念或立场？",
+    "Reconstruct the strongest version of the opposing position — as if you agreed with it.": "像你赞同它一样，把对立立场最强的版本重建出来。",
+    "What is your main reason for disagreeing (in one sentence)?": "你不同意的主要理由是什么？用一句话说清楚。",
+    "What is the strongest point or evidence that challenges your position?": "挑战你立场的最强论点或证据是什么？",
+    "What is the crux of disagreement (the key point where one of you must be wrong, or where different assumptions diverge)?": "分歧的关键点是什么？也就是你们其中一方必然错了，或是底层假设开始分叉的地方。",
+    "What evidence, argument, or observation would change your mind (or materially update your confidence)?": "什么证据、论点或观察会改变你的看法，或者显著更新你的信心？",
+
+    "What topic/decision/problem are you thinking about?": "你正在思考哪个主题 / 决策 / 问题？",
+    "List facts, data, and what you *know*. What information is missing?": "列出事实、数据和你*知道*的内容。还缺什么信息？",
+    "What are your feelings/intuition here (no justification needed)?": "你在这件事上的感受 / 直觉是什么？不需要解释理由。",
+    "What could go wrong? Risks, downsides, cautions.": "可能出什么问题？风险、缺点、需要警惕的点是什么？",
+    "What are the benefits? Upside, value, opportunities.": "好处是什么？上行空间、价值、机会是什么？",
+    "Generate alternatives/creative options. What else could you do?": "生成备选方案 / 创意选项。你还可以怎么做？",
+    "What is the process/next steps? Summarise and decide how you’ll proceed.": "流程 / 下一步是什么？总结一下，并决定你打算怎么推进。",
+
+    "What are you doing a SWOT for (project, decision, career move, strategy)?": "你在为哪个对象做 SWOT？（项目、决策、职业选择、战略等）",
+    "Add one strength (internal advantage).": "补充一个优势（内部优势）。",
+    "Add one weakness (internal limitation).": "补充一个弱点（内部限制）。",
+    "Add one opportunity (external upside).": "补充一个机会（外部利好）。",
+    "Add one threat (external risk).": "补充一个威胁（外部风险）。",
+    "Add another strength?": "再加一个优势吗？",
+    "Add another weakness?": "再加一个弱点吗？",
+    "Add another opportunitie?": "再加一个机会吗？",
+    "Add another threat?": "再加一个威胁吗？",
+    "Name one SO strategy (Strength → Opportunity).": "写下一个 SO 策略（优势 → 机会）。",
+    "Name one ST strategy (Strength → Threat).": "写下一个 ST 策略（优势 → 威胁）。",
+    "Name one WO strategy (Weakness → Opportunity).": "写下一个 WO 策略（弱点 → 机会）。",
+    "Name one WT strategy (Weakness → Threat).": "写下一个 WT 策略（弱点 → 威胁）。",
+
+    "What do you need to decide about?": "你需要就什么做决定？",
+    "What is one constraint?": "一个约束条件是什么？",
+    "What is one option?": "一个选项是什么？",
+    "Look over your constraints and options, make your decision and record it here.": "回看这些约束和选项，做出决定，然后记录在这里。",
+
+    "What are the symptoms that make this problem real and present? Be specific. Avoid interpretation or solution ideas. Ask: \"Why now?\"": "哪些症状让这个问题显得真实且迫在眉睫？请尽量具体，避免解释或直接给方案。问自己：“为什么是现在？”",
+    "Whose problem is this?": "这是谁的问题？",
+    "What will success look like, and by when? Include a quantified target if possible.": "成功会是什么样？要在什么时候达成？如果可以，尽量加入量化目标。",
+    "Which other stakeholders have a say, and what do they want?": "还有哪些利益相关者有发言权？他们想要什么？",
+    "Are there any other stakeholders?": "还有其他利益相关者吗？",
+    "Now that you've considered the TOSCA items, what is the Core Question?": "现在你已经想过 TOSCA 的各项内容了，那么核心问题是什么？",
+
+    "What do you want?": "你想要什么？",
+    "What is an impediment to achieving this?": "实现它的一个阻碍是什么？",
+    "How can I remedy this impediment?": "我可以如何补救这个阻碍？",
+    "Are there any more impediments?": "还有别的阻碍吗？",
+
+    "What is the situation?": "情境是什么？",
+    "Who is affected by this?": "谁会受到影响？",
+    "Are there other people affected?": "还有其他受影响的人吗？",
+    "Do they have any other views?": "他们还有其他看法吗？",
+
+    "Are the locations where the research took place specified, and is this information plausible?": "研究进行的地点是否写明？这些信息是否可信？",
+    "Is a funding source reported?": "是否报告了资金来源？",
+    "Has the study been registered?": "这项研究是否注册过？",
+    "Are details such as dates and study methods consistent with registration documents?": "日期、研究方法等细节是否与注册文件一致？",
+    "Is there evidence that the work has been approved by a specific, recognized committee?": "是否有证据表明这项工作经过了明确且受认可的委员会审批？",
+    "Are there any concerns about unethical practice?": "是否存在不合伦理的做法？",
+    "Do all authors meet criteria for authorship?": "所有作者都符合署名标准吗？",
+    "Are contributorship statements present?": "是否提供了贡献说明？",
+    "Are contributorship statements complete?": "贡献说明是否完整？",
+    "Is authorship of related papers consistent?": "相关论文的作者署名是否一致？",
+    "Can co-authors attest to the reliability of the paper?": "共同作者能否为论文的可靠性背书？",
+    "Is the volume of work reported by the research group plausible?": "研究团队报告的工作量是否合理？",
+    "Is the reported staffing adequate for the study conduct as described?": "按论文描述，这样的人力配置是否足以支撑研究执行？",
+    "Is there evidence of copied work?": "是否存在抄袭证据？",
+    "Is there evidence of text recycling or inconsistent pasted material?": "是否存在文字重复利用或拼贴内容前后不一致的情况？",
+    "Is participant recruitment plausible within the stated timeframe?": "在给定时间范围内，招募参与者是否合理可行？",
+    "Is recruitment plausible given the epidemiology of the disease and study location?": "结合疾病流行情况和研究地点，这样的招募是否合理？",
+    "Do animal or participant numbers align with what is reported?": "动物或参与者数量是否与报告内容一致？",
+    "Are withdrawals compatible with disease, age, and timeline?": "退出情况是否与疾病、年龄和时间线相符？",
+    "Are deaths compatible with disease, age, and timeline?": "死亡情况是否与疾病、年龄和时间线相符？",
+    "Is the interval between study completion and manuscript submission plausible?": "研究完成到论文投稿之间的间隔是否合理？",
+    "Could the study plausibly be completed as described?": "这项研究真的有可能像文中描述那样完成吗？",
+    "Are the study methods plausible at the stated location?": "在文中所说的地点，这些研究方法是否现实可行？",
+    "Have appropriate analyses been undertaken and reported?": "是否进行了恰当的分析，并如实报告？",
+    "Is there evidence of poor methodology (missing data, inappropriate handling)?": "是否存在方法学较差的证据（如缺失数据、处理不当）？",
+    "Is there evidence of p-hacking or selective analyses?": "是否存在 p-hacking 或选择性分析？",
+    "Is there evidence of unacknowledged multiple testing?": "是否存在未明确说明的多重检验？",
+    "Is there outcome switching compared to registered analysis plans?": "相对于注册分析计划，是否存在结局指标切换？",
+    "Is there evidence of manipulation or duplication of images?": "是否存在图像操纵或重复使用？",
+    "Are any data impossible?": "是否有不可能成立的数据？",
+    "Are subgroup means incompatible with whole-cohort data?": "亚组均值是否与整体样本数据不相容？",
+    "Are summary data compatible with reported ranges?": "汇总数据是否与报告的数值范围相符？",
+    "Are summary outcomes identical across groups?": "不同组的汇总结果是否完全一样？",
+    "Are there discrepancies between figures, tables, and text?": "图、表和正文之间是否存在不一致？",
+    "Are statistical test results compatible with reported data?": "统计检验结果是否与报告数据相匹配？",
+    "Are baseline data excessively similar or different between groups?": "各组基线数据是否过于相似或过于不同？",
+    "Are outcome data unexpected outliers?": "结果数据里是否有异常离群值？",
+    "Are outcome frequencies unusual?": "结果发生频率是否异常？",
+    "Are any data outside expected ranges for sex, age, or disease?": "是否有数据落在性别、年龄或疾病预期范围之外？",
+    "Are percentage and absolute changes consistent?": "百分比变化与绝对值变化是否一致？",
+    "Are data consistent with inclusion criteria?": "数据是否符合纳入标准？",
+    "Are variances in biological variables implausibly consistent?": "生物变量的方差是否不合理地过于一致？",
+    "Are correct units reported?": "单位是否正确？",
+    "Are participant numbers correct and consistent?": "参与者人数是否正确且一致？",
+    "Are proportions and percentages calculated correctly?": "比例和百分比计算是否正确？",
+    "Are results internally consistent?": "结果内部是否一致？",
+    "Are statistical results internally consistent and plausible?": "统计结果在内部是否一致且合理？",
+    "Are other data errors present?": "是否还存在其他数据错误？",
+    "Are there typographical errors?": "是否有排版或拼写错误？",
+    "Have the data been published elsewhere?": "这些数据是否已在别处发表？",
+    "Is duplicate reporting acknowledged or explained?": "重复报告是否被明确说明或解释？",
+    "How much data is duplicate reported?": "有多少数据被重复报告？",
+    "Are duplicate data consistent across publications?": "重复数据在不同发表物中是否一致？",
+    "Are methods consistent across publications?": "不同发表物中的方法是否一致？",
+    "Is there evidence of figure duplication?": "是否存在图表重复使用的证据？",
+};
+
+const ZH_PATTERNS = [
+    [/^\*\*Situation:\*\*\s*(.+)$/u, "**情境：** $1"],
+    [/^\*\*Topic:\*\*\s*(.+)$/u, "**主题：** $1"],
+    [/^\*\*Action \/ Decision:\*\*\s*(.+)$/u, "**行动 / 决策：** $1"],
+    [/^\*\*Design\/Decision:\*\*\s*(.+)$/u, "**设计 / 决策：** $1"],
+    [/^#Choice:\s*(.+)$/u, "#选择： $1"],
+    [/^\*\*Issue:\*\*\s*(.+)$/u, "**问题：** $1"],
+    [/^\*\*Subject:\*\*\s*(.+)$/u, "**对象：** $1"],
+    [/^\*\*Claim:\*\*\s*(.+)$/u, "**主张：** $1"],
+    [/^\*\*Drivers:\*\*\s*(.+)$/u, "**驱动因素：** $1"],
+    [/^\*\*Assumptions:\*\*\s*(.+)$/u, "**假设：** $1"],
+    [/^\*\*Unknowns:\*\*\s*(.+)$/u, "**未知项：** $1"],
+    [/^\*\*Priority (\d+):\*\*\s*(.+)$/u, "**优先级 $1：** $2"],
+    [/^\*\*Sub-problem (\d+):\*\*\s*(.+)$/u, "**子问题 $1：** $2"],
+    [/^\*\*Why (\d+)\?\*\*$/u, "**为什么 $1？**"],
+    [/^\*\*SO:\*\*\s*(.+)$/u, "**SO：** $1"],
+    [/^\*\*ST:\*\*\s*(.+)$/u, "**ST：** $1"],
+    [/^\*\*WO:\*\*\s*(.+)$/u, "**WO：** $1"],
+    [/^\*\*WT:\*\*\s*(.+)$/u, "**WT：** $1"],
+    [/^\*\*Reduce DO-regret:\*\*\s*(.+)$/u, "**减少“去做”的后悔：** $1"],
+    [/^\*\*Reduce DON’T-regret:\*\*\s*(.+)$/u, "**减少“不去做”的后悔：** $1"],
+    [/^Impediment:\s*(.+)$/u, "阻碍：$1"],
+    [/^Remedy:\s*(.+)$/u, "补救办法：$1"],
+    [/^Was the pain warranted and valid::\s*(.+)$/u, "这种痛苦是否合理且成立:: $1"],
+    [/^Does the situation still matter::\s*(.+)$/u, "这件事现在是否仍然重要:: $1"],
+    [/^\*\*\{\{\[\[TODO\]\]\}\} \[\[Choice\]\]:\*\*\s*(.+)$/u, "**{{[[TODO]]}} [[选择]]：** $1"],
+    [/^\[\[I want\]\]\s*(.+)$/u, "[[我想要]] $1"],
+    [/^Priority (\d+): What will you do\? \(actionable\)$/u, "优先级 $1：你准备做什么？（要可执行）"],
+    [/^Add another note for (.+)\?$/u, "再为 $1 添加一条吗？"],
+    [/^Now mentally simulate doing this action - (.+)\. Can you do it right now\?$/u, "现在在脑中模拟执行这个动作：$1。你此刻就能做吗？"],
+    [/^Imagine yourself (.+) from now\. What do you value most about that future life\?$/u, "想象从现在起 $1 之后的你。那时的生活里，你最看重什么？"],
+    [/^How does (.+) view this situation\?$/u, "$1 如何看待这个情境？"],
+];
+
+function translateToChinese(text) {
+    let out = String(text ?? "");
+    if (!out) return out;
+
+    if (ZH_EXACT[out]) return ZH_EXACT[out];
+
+    for (const [pattern, replacement] of ZH_PATTERNS) {
+        if (pattern.test(out)) {
+            out = out.replace(pattern, replacement);
+            break;
+        }
+    }
+
+    return ZH_EXACT[out] || out;
+}
+
+function localizeText(text) {
+    const raw = String(text ?? "");
+    if (!raw || !isChineseEnabled()) return raw;
+    return translateToChinese(raw);
+}
+
 function ensureDefaultSettings(extensionAPI) {
     try {
         const existing = extensionAPI?.settings?.get?.(SETTING_CANCEL_CLEANUP);
         if (existing === null || existing === undefined) {
             extensionAPI?.settings?.set?.(SETTING_CANCEL_CLEANUP, DEFAULT_CANCEL_CLEANUP);
+        }
+
+        const language = extensionAPI?.settings?.get?.(SETTING_SIMPLIFIED_CHINESE);
+        if (language === null || language === undefined) {
+            extensionAPI?.settings?.set?.(SETTING_SIMPLIFIED_CHINESE, browserPrefersChinese());
         }
     } catch (e) {
         // non-fatal
@@ -44,14 +657,30 @@ function ensureDefaultSettings(extensionAPI) {
 
 function createSettingsPanel(extensionAPI) {
     try {
+        const chinese = getChineseEnabled(extensionAPI);
         extensionAPI.settings.panel.create({
             tabTitle: "AOT",
             settings: [
                 {
+                    id: SETTING_SIMPLIFIED_CHINESE,
+                    name: chinese ? "使用简体中文" : "Use Simplified Chinese",
+                    description: chinese
+                        ? "将弹窗提示、按钮、命令名称和生成内容显示为简体中文。"
+                        : "Show prompts, buttons, command names, and generated scaffold text in Simplified Chinese.",
+                    action: {
+                        type: "switch",
+                        onChange: (v) => {
+                            const checked = typeof v === "boolean" ? v : !!v?.target?.checked;
+                            extensionAPI.settings.set(SETTING_SIMPLIFIED_CHINESE, checked);
+                        },
+                    },
+                },
+                {
                     id: SETTING_CANCEL_CLEANUP,
-                    name: "Cancel cleanup mode",
-                    description:
-                        "If you cancel a workflow, automatically remove blocks created during this run and restore the starting block text.",
+                    name: chinese ? "取消时清理" : "Cancel cleanup mode",
+                    description: chinese
+                        ? "取消流程时，自动删除本次创建的 blocks，并恢复起始 block 的原始文本。"
+                        : "If you cancel a workflow, automatically remove blocks created during this run and restore the starting block text.",
                     action: {
                         type: "switch",
                         onChange: (v) => {
@@ -83,8 +712,8 @@ function toastInfo(message, title = "AOT") {
         iziToast.info({
             theme: "dark",
             color: "",
-            title,
-            message,
+            title: localizeText(title),
+            message: localizeText(message),
             position: "center",
             timeout: 2500,
             closeOnClick: true,
@@ -99,8 +728,8 @@ function toastWarn(message, title = "AOT") {
         iziToast.warning({
             theme: "dark",
             color: "",
-            title,
-            message,
+            title: localizeText(title),
+            message: localizeText(message),
             position: "center",
             timeout: 3500,
             closeOnClick: true,
@@ -365,7 +994,7 @@ async function trackedUpdateBlock(uid, string, open = true) {
     if (!u) return;
 
     return window.roamAlphaAPI.updateBlock({
-        block: { uid: u, string: String(string ?? ""), open: !!open },
+        block: { uid: u, string: localizeText(string), open: !!open },
     });
 }
 
@@ -385,18 +1014,18 @@ async function trackedCreateBlock(parentUid, order, string, uid) {
     }
 
     try {
-        await window.roamAlphaAPI.createBlock({
-            location: { "parent-uid": parent, order: ord },
-            block: { string: String(string ?? ""), uid: blockUid },
-        });
-        return blockUid;
-    } catch (e) {
+            await window.roamAlphaAPI.createBlock({
+                location: { "parent-uid": parent, order: ord },
+                block: { string: localizeText(string), uid: blockUid },
+            });
+            return blockUid;
+        } catch (e) {
         // One retry with refreshed order (cheap race hardening)
         try {
             const retryOrd = await countChildren(parent);
             await window.roamAlphaAPI.createBlock({
                 location: { "parent-uid": parent, order: retryOrd },
-                block: { string: String(string ?? ""), uid: blockUid },
+                block: { string: localizeText(string), uid: blockUid },
             });
             return blockUid;
         } catch (e2) {
@@ -493,10 +1122,10 @@ async function runAOT(extensionAPI, fn, { allowParallel = false, launchWindowId 
 
 function buildSelectFromOptions(options) {
     const safe = Array.isArray(options) ? options : [];
-    let html = '<select><option value="">Select</option>';
+    let html = `<select><option value="">${escapeHtml(localizeText("Select"))}</option>`;
     for (const opt of safe) {
         const value = safeUid(opt?.value);
-        const label = escapeHtml(opt?.label ?? "");
+        const label = escapeHtml(localizeText(opt?.label ?? ""));
         html += `<option value="${value}">${label}</option>`;
     }
     html += "</select>";
@@ -537,7 +1166,12 @@ async function ensureSection(rootUid, label, { order = "last" } = {}) {
               [?p :block/uid "${root}"]]`
         );
         const children = q?.children || [];
-        const found = children.find((c) => String(c?.string ?? "") === String(label ?? ""));
+        const rawLabel = String(label ?? "");
+        const translatedLabel = localizeText(rawLabel);
+        const found = children.find((c) => {
+            const value = String(c?.string ?? "");
+            return value === rawLabel || value === translatedLabel;
+        });
         const foundUid = safeUid(found?.uid);
         if (foundUid) return foundUid;
     } catch (e) {
@@ -563,7 +1197,7 @@ async function chooseChild(parentUid, title, message) {
     const options = children
         .map((c) => ({
             value: safeUid(c?.uid),
-            label: String(c?.string ?? "").trim() || "(empty)",
+            label: String(c?.string ?? "").trim() || localizeText("(empty)"),
         }))
         .filter((o) => !!o.value);
 
@@ -585,12 +1219,13 @@ async function leaf(parentUid, { order = "last", focus = true } = {}) {
 
 export default {
     onload: ({ extensionAPI }) => {
+        runtime.extensionAPI = extensionAPI;
         ensureDefaultSettings(extensionAPI);
         createSettingsPanel(extensionAPI);
 
         const registerPalette = (label, fn) => {
             extensionAPI.ui.commandPalette.addCommand({
-                label,
+                label: localizeText(label),
                 callback: () => {
                     // Let palette close + focus restore before reading focus
                     setTimeout(() => {
@@ -599,7 +1234,7 @@ export default {
                         if (launchWindowId) runtime.focusedWindow = launchWindowId;
 
                         if (!uid) {
-                            alert("Please make sure to focus a block before starting an AOT");
+                            alert(localizeText("Please make sure to focus a block before starting an AOT"));
                             return;
                         }
 
@@ -658,7 +1293,7 @@ export default {
         // ---- SmartBlocks commands ----
         const mkSmartblocksCmd = (text, help, fn) => ({
             text,
-            help,
+            help: localizeText(help),
             handler: (context) => () => {
                 const uid = safeUid(context?.currentUid);
 
@@ -750,6 +1385,7 @@ export default {
         runtime.focusedWindow = null;
         runtime.running = false;
         CURRENT_CTX = null;
+        runtime.extensionAPI = null;
     },
 };
 
@@ -2350,6 +2986,9 @@ async function aot_opv(uid) {
 // -------------------- PROMPT --------------------
 
 async function prompt(message, type, title, selectString, timer) {
+    const localizedTitle = localizeText(title);
+    const localizedMessage = localizeText(message);
+
     // one-shot resolver guard (prevents double-resolve)
     const once = (resolve) => {
         let done = false;
@@ -2385,12 +3024,12 @@ async function prompt(message, type, title, selectString, timer) {
                 closeOnEscape: true,
                 displayMode: 2,
                 id: toastId,
-                title,
-                message,
+                title: localizedTitle,
+                message: localizedMessage,
                 position: "center",
                 inputs: [
                     [
-                        '<input type="text" placeholder="">',
+                        `<input type="text" placeholder="${escapeHtml(localizeText("Type here..."))}">`,
                         "keyup",
                         function (instance, toast, input, e) {
                             if (e.code === "Enter") {
@@ -2403,7 +3042,7 @@ async function prompt(message, type, title, selectString, timer) {
                 ],
                 buttons: [
                     [
-                        "<button><b>Confirm</b></button>",
+                        `<button><b>${escapeHtml(localizeText("Confirm"))}</b></button>`,
                         function (instance, toast, button, e, inputs) {
                             instance.hide({ transitionOut: "fadeOut" }, toast, "button");
                             done(inputs?.[0]?.value ?? "");
@@ -2411,7 +3050,7 @@ async function prompt(message, type, title, selectString, timer) {
                         false,
                     ],
                     [
-                        "<button>Cancel</button>",
+                        `<button>${escapeHtml(localizeText("Cancel"))}</button>`,
                         function (instance, toast) {
                             instance.hide({ transitionOut: "fadeOut" }, toast, "button");
                             cancel(done);
@@ -2441,13 +3080,13 @@ async function prompt(message, type, title, selectString, timer) {
                 overlayClose: true,
                 closeOnEscape: true,
                 id: toastId,
-                title,
-                message,
+                title: localizedTitle,
+                message: localizedMessage,
                 position: "center",
                 inputs: [[selectString, "change", function () { }]],
                 buttons: [
                     [
-                        "<button><b>Confirm</b></button>",
+                        `<button><b>${escapeHtml(localizeText("Confirm"))}</b></button>`,
                         function (instance, toast, button, e, inputs) {
                             instance.hide({ transitionOut: "fadeOut" }, toast, "button");
                             const sel = inputs?.[0];
@@ -2458,7 +3097,7 @@ async function prompt(message, type, title, selectString, timer) {
                         false,
                     ],
                     [
-                        "<button>Cancel</button>",
+                        `<button>${escapeHtml(localizeText("Cancel"))}</button>`,
                         function (instance, toast) {
                             instance.hide({ transitionOut: "fadeOut" }, toast, "button");
                             cancel(done);
@@ -2489,12 +3128,12 @@ async function prompt(message, type, title, selectString, timer) {
                 closeOnEscape: true,
                 displayMode: 2,
                 id: toastId,
-                title,
-                message,
+                title: localizedTitle,
+                message: localizedMessage,
                 position: "center",
                 buttons: [
                     [
-                        "<button>Yes</button>",
+                        `<button>${escapeHtml(localizeText("Yes"))}</button>`,
                         function (instance, toast) {
                             instance.hide({ transitionOut: "fadeOut" }, toast, "button");
                             done("yes");
@@ -2502,14 +3141,14 @@ async function prompt(message, type, title, selectString, timer) {
                         false,
                     ],
                     [
-                        "<button>No</button>",
+                        `<button>${escapeHtml(localizeText("No"))}</button>`,
                         function (instance, toast) {
                             instance.hide({ transitionOut: "fadeOut" }, toast, "button");
                             done("no");
                         },
                     ],
                     [
-                        "<button>Cancel</button>",
+                        `<button>${escapeHtml(localizeText("Cancel"))}</button>`,
                         function (instance, toast) {
                             instance.hide({ transitionOut: "fadeOut" }, toast, "button");
                             cancel(done);
@@ -2527,8 +3166,8 @@ async function prompt(message, type, title, selectString, timer) {
     if (type === 4) {
         return new Promise((resolve) => {
             iziToast.show({
-                title,
-                message,
+                title: localizedTitle,
+                message: localizedMessage,
                 theme: "dark",
                 layout: 1,
                 close: true,
@@ -2554,8 +3193,8 @@ async function prompt(message, type, title, selectString, timer) {
     if (type === 5) {
         return new Promise((resolve) => {
             iziToast.show({
-                title,
-                message,
+                title: localizedTitle,
+                message: localizedMessage,
                 theme: "dark",
                 layout: 1,
                 close: true,
@@ -2596,13 +3235,14 @@ async function prompt(message, type, title, selectString, timer) {
                 closeOnEscape: true,
                 displayMode: 2,
                 id: toastId,
-                title,
-                message,
+                title: localizedTitle,
+                message: localizedMessage,
                 position: "center",
                 progressBar: true,
                 inputs: [
                     [
-                        '<textarea rows = "6" style = "min-width:400px; min-height:220px; resize:vertical; font-size:14px; line-height:1.4;"placeholder = "Type here..."></textarea >', "keyup",
+                        `<textarea rows="6" style="min-width:400px; min-height:220px; resize:vertical; font-size:14px; line-height:1.4;" placeholder="${escapeHtml(localizeText("Type here..."))}"></textarea>`,
+                        "keyup",
                         function (instance, toast, input, e) {
                             // Ctrl/Cmd+Enter submits quickly
                             if ((e.ctrlKey || e.metaKey) && e.code === "Enter") {
@@ -2615,7 +3255,7 @@ async function prompt(message, type, title, selectString, timer) {
                 ],
                 buttons: [
                     [
-                        "<button><b>Save</b></button>",
+                        `<button><b>${escapeHtml(localizeText("Save"))}</b></button>`,
                         function (instance, toast, button, e, inputs) {
                             instance.hide({ transitionOut: "fadeOut" }, toast, "button");
                             done(inputs?.[0]?.value ?? "");
@@ -2623,7 +3263,7 @@ async function prompt(message, type, title, selectString, timer) {
                         false,
                     ],
                     [
-                        "<button>Cancel</button>",
+                        `<button>${escapeHtml(localizeText("Cancel"))}</button>`,
                         function (instance, toast) {
                             instance.hide({ transitionOut: "fadeOut" }, toast, "button");
                             cancel(done);
